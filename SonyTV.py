@@ -107,25 +107,48 @@ class SonyTV():
 
     def controller(self):
         win = Tk()
+        win.config(bg='#999999')
         win.title('SonyTV')
         chanlist = ['66','125.1','130.1', '125.3','125.4','87.2','87.5','102.5','103.1','103.2','103.3','105.1']
-        Button(win, text="Input", command=(lambda: self.command("Input"))).pack()
-        Button(win, text="Volume Up", command=(lambda: self.command("VolumeUp"))).pack()
-        Button(win, text="Volume Down", command=(lambda: self.command("VolumeDown"))).pack()
-        Button(win, text="Mute", command=(lambda: self.command("Mute"))).pack()
-        Button(win, text="Channel Up", command=(lambda: self.command("ChannelUp"))).pack()
-        Button(win, text="Channel Down", command=(lambda: self.command("ChannelDown"))).pack()
+        inpt = Button(win, text="Input", command=(lambda: self.command("Input")))
+        inpt.config(highlightbackground='#999999', image="")
+        inpt.pack()
+        volu=Button(win, text="Volume Up", command=(lambda: self.command("VolumeUp")))
+        volu.config(highlightbackground='#999999')
+        volu.pack()
+        vold=Button(win, text="Volume Down", command=(lambda: self.command("VolumeDown")))
+        vold.config(highlightbackground='#999999')
+        vold.pack()
+        mutb=Button(win, text="Mute", command=(lambda: self.command("Mute")))
+        mutb.config(highlightbackground='#999999')
+        mutb.pack()
+        chup=Button(win, text="Channel Up", command=(lambda: self.command("ChannelUp")))
+        chup.config(highlightbackground='#999999')
+        chup.pack()
+        chdn=Button(win, text="Channel Down", command=(lambda: self.command("ChannelDown")))
+        chdn.config(highlightbackground='#999999')
+        chdn.pack()
         #Button(win, text="Enter Channel", command=(lambda: self.channel(str(askfloat("Channel", "Enter:"))))).pack()
         list = Listbox(win,listvariable=chanlist)
         list.pack()
         for item in chanlist:
             list.insert(END, item)
-        Button(win, text="Go To...", command=(lambda: self.channel(chanlist[list.curselection()[0]]))).pack()
+        goto=Button(win, text="Go To...", command=(lambda: self.channel(chanlist[list.curselection()[0]])))
+        goto.config(highlightbackground='#999999')
+        goto.pack()
         chan = Entry(win, text="Entry")
+        chan.config(highlightbackground='#999999')
         chan.pack()
-        Button(win, text="Go", command=(lambda: self.channel(chan.get()))).pack()
-        Button(win, text="Jump", command=(lambda: self.command("Jump"))).pack()
-        Button(win, text="Quit", command=win.quit).pack()
+        nugo=Button(win, text="Go", command=(lambda: self.channel(chan.get())))
+        nugo.config(highlightbackground='#999999')
+        nugo.pack()
+        jump=Button(win, text="Jump", command=(lambda: self.command("Jump")))
+        jump.config(highlightbackground='#999999')
+        jump.pack()
+        qbut=Button(win, text="Quit", command=win.quit)
+        qbut.config(highlightbackground='#999999')
+        qbut.pack()
+        win.wm_attributes("-topmost", 1)
         win.mainloop()
 
     # def set_button(event=None, buttons=struct_o_buttons):
@@ -161,7 +184,10 @@ class SonyTV():
         url = 'http://'+self.ip+'/IRCC'
         cmd = self.cmds[cmdname]
         data ='<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>'+cmd+'</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>'
-        requests.post(url, data=data)
+        try:
+            requests.post(url, data=data)
+        except:
+            print('Error')
 
     def channel(self, numstr):
         numpad = ['Num0','Num1','Num2','Num3','Num4','Num5','Num6','Num7','Num8','Num9']
