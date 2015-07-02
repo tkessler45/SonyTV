@@ -4,7 +4,7 @@ from SonyTV import SonyTV
 
 def launchTV():
     TV = SonyTV()
-    TV.controller()
+    TV.controller2()
 
 if __name__ == "__main__":
     launchTV()

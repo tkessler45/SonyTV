@@ -11,10 +11,13 @@ Create SonyTV class with methods:
 
 import requests, time, socket, struct
 from tkinter import *
+import threading
 from tkinter.simpledialog import askfloat
 
-class SonyTV():
-    def __init__(self, ip="192.168.1.7", mac="F0:BF:97:78:CA:0D"):
+class SonyTV(Frame):
+    def __init__(self, ip="192.168.1.7", mac="F0:BF:97:78:CA:0D", parent=None, **Options):
+        Frame.__init__(self, master=parent, **Options)
+        self.pack()
         self.ip = ip
         self.mac = mac
         self.cmds = {'Analog': 'AAAAAgAAAHcAAAANAw==',
@@ -104,6 +107,7 @@ class SonyTV():
             'OneTouchRec': 'AAAAAgAAABoAAABiAw==',
             'OneTouchRecStop': 'AAAAAgAAABoAAABjAw==',
             'PicOff': 'AAAAAQAAAAEAAAA+Aw'}
+        self.chanvar = ""
 
     def controller(self):
         win = Tk()
@@ -150,6 +154,93 @@ class SonyTV():
         qbut.pack()
         win.wm_attributes("-topmost", 1)
         win.mainloop()
+
+    def controller2(self):
+        def updatelabel(label):
+            widget.config(text=label)
+            time.sleep(1)
+            widget.config(text="")
+        def VolumeUp():
+            threading.Thread(target=updatelabel, args=('Volume Up',)).start()
+            self.command('VolumeUp')
+        def VolumeDown():
+            threading.Thread(target=updatelabel, args=('Volume Down',)).start()
+            self.command('VolumeDown')
+        def ChannelUp():
+            threading.Thread(target=updatelabel, args=('Channel Up',)).start()
+            self.command('ChannelUp')
+        def ChannelDown():
+            threading.Thread(target=updatelabel, args=('Channel Down',)).start()
+            self.command('ChannelDown')
+        def Input():
+            threading.Thread(target=updatelabel, args=('Input',)).start()
+            self.command('Input')
+        def Mute():
+            threading.Thread(target=updatelabel, args=('Mute',)).start()
+            self.command('Mute')
+        def Confirm(event):
+            threading.Thread(target=updatelabel, args=('Enter',)).start()
+            self.command('Confirm')
+        def Up(event):
+            threading.Thread(target=updatelabel, args=('Up',)).start()
+            self.command('Up')
+        def Down(event):
+            threading.Thread(target=updatelabel, args=('Down',)).start()
+            self.command('Down')
+        def Left(event):
+            threading.Thread(target=updatelabel, args=('Left',)).start()
+            self.command('Left')
+        def Right(event):
+            threading.Thread(target=updatelabel, args=('Right',)).start()
+            self.command('Right')
+        def Escape(event):
+            threading.Thread(target=updatelabel, args=('Exit',)).start()
+            self.command('Exit')
+        def Keypress(event): #or <Keypress-]> below, for example...
+            if event.char == "=": VolumeUp()
+            if event.char == "-": VolumeDown()
+            if event.char == "+": ChannelUp()
+            if event.char == "_": ChannelDown()
+            if event.char == "]": ChannelUp()
+            if event.char == "[": ChannelDown()
+            if event.char == "i": Input()
+            if event.char == "m": Mute()
+            if event.char == "0": self.command('Num0')
+            if event.char == "1": self.command('Num1')
+            if event.char == "2": self.command('Num2')
+            if event.char == "3": self.command('Num3')
+            if event.char == "4": self.command('Num4')
+            if event.char == "5": self.command('Num5')
+            if event.char == "6": self.command('Num6')
+            if event.char == "7": self.command('Num7')
+            if event.char == "8": self.command('Num8')
+            if event.char == "9": self.command('Num9')
+            if event.char == ".": self.command('DOT')
+
+        win = Tk()
+        win.wm_attributes("-topmost", 1)
+        win.config(bg='#999999')
+        Label(win, text="+: Volume Up\n-: Volume Down\n]: Channel Up\n[:Channel Down", bg="#999999").pack()
+        widget = Label(win)
+        widget.config(text="")
+        widget.config(bg='#999999')
+        widget.config(width=20, height=10)
+        widget.pack(expand=YES, fill=BOTH)
+        widget.bind('<Up>', Up)
+        widget.bind('<Down>', Down)
+        widget.bind('<Left>', Left)
+        widget.bind('<Right>', Right)
+        widget.bind('<KeyPress>', Keypress)
+        widget.bind('<Shift-KeyPress>', Keypress)
+        widget.bind('<Return>', Confirm)
+        widget.bind('<Escape>', Escape)
+        widget.bind('<Button-1>', self.setfocus)
+        # chanbox = Entry(win, text="Channel:", textvariable=self.chanvar)
+        # chanbox.bind('<Return>', self.interchan)
+        # chanbox.pack()
+        widget.focus()
+        win.mainloop()
+
 
     # def set_button(event=None, buttons=struct_o_buttons):
     #     listbox = event.widget # where we clicked the mouse
@@ -198,3 +289,10 @@ class SonyTV():
                 self.command(numpad[int(n)])
             time.sleep(0.1)
         self.command('Confirm')
+
+    def interchan(self, event):
+        print(self.chanvar)
+        self.channel(self.chanvar)
+    def setfocus(self, event):
+        print(self)
+        self.focus_set()
