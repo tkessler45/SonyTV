@@ -11,15 +11,51 @@ Create SonyTV class with methods:
 
 import requests, time, socket, struct
 from tkinter import *
-import threading
-from tkinter.simpledialog import askfloat
+import threading, os
+
+class chanbox(Frame):
+    def __init__(self, parent=None, list="", command=None, args=None, **Options):
+        Frame.__init__(self, master=parent, **Options)
+        self.pack(fill=BOTH, expand=YES)
+        self.items = list
+        self.args = args
+        self.cmd = command
+        self.list = Listbox(self)
+        self.scroll = Scrollbar(self)
+        self.buildWidget()
+
+    def buildWidget(self):
+        scroll = self.scroll
+        list = self.list
+        scroll.config(command=list.yview)
+        list.config(yscrollcommand=scroll.set)
+        list.pack(side=LEFT, expand=YES, fill=BOTH)
+        scroll.pack(side=RIGHT, fill=Y)
+        self.populate(list,self.items)
+        list.bind('<Double-1>', self.bindcmd)
+
+    def populate(self, list, items):
+        list.delete(0,END)
+        for item in items:
+            list.insert(END, item)
+
+    def bindcmd(self,event):
+        threading.Thread(target=self.cmd, args=(self.args,)).start()
+        #self.cmd(self.args)
+        #self.cmd(self,self.args)
+
+def chanlisthandler(obj, *Options):
+    #print(obj.cbox.list.get(obj.cbox.list.curselection())[:-1])
+    obj.channel(obj.cbox.list.get(obj.cbox.list.curselection())[:-1])
+    obj.cbox.list.selection_clear(0,END)
 
 class SonyTV(Frame):
-    def __init__(self, ip="192.168.1.7", mac="F0:BF:97:78:CA:0D", parent=None, **Options):
+    def __init__(self, ip="", mac="", parent=None, **Options):
         Frame.__init__(self, master=parent, **Options)
         self.pack()
         self.ip = ip
         self.mac = mac
+        self.response = 1
         self.cmds = {'Analog': 'AAAAAgAAAHcAAAANAw==',
             'Analog2': 'AAAAAQAAAAEAAAA4Aw==',
             'Analog?': 'AAAAAgAAAJcAAAAuAw==',
@@ -109,6 +145,15 @@ class SonyTV(Frame):
             'PicOff': 'AAAAAQAAAAEAAAA+Aw'}
         self.chanvar = ""
 
+    def checkconnection(self, ip, widget):
+        while True:
+            self.response = os.system("ping -c 1 -W 10 " + ip + " > /dev/null 2> /dev/null")
+            if self.response==0:
+                widget.config(text="connected", bg='green')
+            else:
+                widget.config(text="no connection", bg='red')
+            time.sleep(1)
+
     def controller(self):
         win = Tk()
         win.config(bg='#999999')
@@ -155,11 +200,11 @@ class SonyTV(Frame):
         win.wm_attributes("-topmost", 1)
         win.mainloop()
 
-    def controller2(self):
+    def controller2(self,favlist=""):
         def updatelabel(label):
-            widget.config(text=label)
+            status.config(text=label)
             time.sleep(1)
-            widget.config(text="")
+            status.config(text="")
         def VolumeUp():
             threading.Thread(target=updatelabel, args=('Volume Up',)).start()
             self.command('VolumeUp')
@@ -195,6 +240,7 @@ class SonyTV(Frame):
             self.command('Right')
         def Escape(event):
             threading.Thread(target=updatelabel, args=('Exit',)).start()
+            win.focus()
             self.command('Exit')
         def Keypress(event): #or <Keypress-]> below, for example...
             if event.char == "=": VolumeUp()
@@ -220,27 +266,38 @@ class SonyTV(Frame):
         win = Tk()
         win.wm_attributes("-topmost", 1)
         win.config(bg='#999999')
+        address = Label(win, text=self.ip, bg="#999999")
+        address.pack()
+        stats = Label(win, text="")
+        stats.pack()
+        statsthread = threading.Thread(target=self.checkconnection, args=(self.ip, stats))
+        statsthread.setDaemon(True)
+        statsthread.start()
         Label(win, text="+: Volume Up\n-: Volume Down\n]: Channel Up\n[:Channel Down", bg="#999999").pack()
-        widget = Label(win)
-        widget.config(text="")
-        widget.config(bg='#999999')
-        widget.config(width=20, height=10)
-        widget.pack(expand=YES, fill=BOTH)
-        widget.bind('<Up>', Up)
-        widget.bind('<Down>', Down)
-        widget.bind('<Left>', Left)
-        widget.bind('<Right>', Right)
-        widget.bind('<KeyPress>', Keypress)
-        widget.bind('<Shift-KeyPress>', Keypress)
-        widget.bind('<Return>', Confirm)
-        widget.bind('<Escape>', Escape)
-        widget.bind('<Button-1>', self.setfocus)
+        status = Label(win)
+        status.config(text="")
+        status.config(bg='#999999')
+        status.config(width=20, height=1)
+        status.pack(fill=X)
+        win.bind('<Up>', Up)
+        win.bind('<Down>', Down)
+        win.bind('<Left>', Left)
+        win.bind('<Right>', Right)
+        win.bind('<KeyPress>', Keypress)
+        win.bind('<Shift-KeyPress>', Keypress)
+        win.bind('<Return>', Confirm)
+        win.bind('<Escape>', Escape)
+        win.bind('<Button-1>', self.setfocus)
         # chanbox = Entry(win, text="Channel:", textvariable=self.chanvar)
         # chanbox.bind('<Return>', self.interchan)
         # chanbox.pack()
-        widget.focus()
+        self.cbox = chanbox(win,favlist,command=chanlisthandler, args=self)
+        self.cbox.list.bind('<Escape>', Escape)
+        btn = Button(win, text="Quit", command=self.quit)
+        btn.config(highlightbackground='#999999')
+        btn.pack()
+        status.focus()
         win.mainloop()
-
 
     # def set_button(event=None, buttons=struct_o_buttons):
     #     listbox = event.widget # where we clicked the mouse
@@ -272,13 +329,14 @@ class SonyTV(Frame):
     #    return '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>'+cmd+'</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>'
 
     def command(self, cmdname):
-        url = 'http://'+self.ip+'/IRCC'
-        cmd = self.cmds[cmdname]
-        data ='<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>'+cmd+'</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>'
-        try:
-            requests.post(url, data=data)
-        except:
-            print('Error')
+        if self.response==0:
+            url = 'http://'+self.ip+'/IRCC'
+            cmd = self.cmds[cmdname]
+            data ='<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>'+cmd+'</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>'
+            try:
+                requests.post(url, data=data)
+            except:
+                print('Error')
 
     def channel(self, numstr):
         numpad = ['Num0','Num1','Num2','Num3','Num4','Num5','Num6','Num7','Num8','Num9']
@@ -294,5 +352,5 @@ class SonyTV(Frame):
         print(self.chanvar)
         self.channel(self.chanvar)
     def setfocus(self, event):
-        print(self)
-        self.focus_set()
+        self.master.focus_set()
+        #self.focus_set()
