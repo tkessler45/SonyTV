@@ -33,6 +33,7 @@ class chanbox(Frame):
         scroll.pack(side=RIGHT, fill=Y)
         self.populate(list,self.items)
         list.bind('<Double-1>', self.bindcmd)
+        list.bind('<Return>', self.bindcmd)
 
     def populate(self, list, items):
         list.delete(0,END)
@@ -345,7 +346,7 @@ class SonyTV(Frame):
                 self.command('DOT')
             else:
                 self.command(numpad[int(n)])
-            time.sleep(0.1)
+            time.sleep(0.2)
         self.command('Confirm')
 
     def interchan(self, event):
